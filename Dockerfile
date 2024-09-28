@@ -10,10 +10,12 @@ ENV PYTHON=/usr/bin/python
 
 COPY package*.json ./
 # Use explicit Python path for node-gyp
-RUN npm ci --production --python=/usr/bin/python
+RUN npm ci --python=/usr/bin/python
 
 COPY . .
 RUN npm run build
+
+RUN npm ci --omit=dev --python=/usr/bin/python
 
 # Stage 2: Runtime
 FROM node:18-alpine
