@@ -4,9 +4,8 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Install build-essential equivalent and other common build tools
-RUN apk add --no-cache build-base python3 make g++ && \
-    ln -sf python3 /usr/bin/python && \
-    npm config set python /usr/bin/python
+RUN apk add --no-cache build-base python3 && \
+    ln -sf python3 /usr/bin/python
 ENV PYTHON=/usr/bin/python
 
 COPY package*.json ./
