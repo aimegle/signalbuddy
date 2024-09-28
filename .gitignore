@@ -8,3 +8,5 @@ dist
 .jshintignore
 .jshintrc
 yarn-error.log
+config/local.json
+config/*-config.json

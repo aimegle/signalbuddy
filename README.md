@@ -23,12 +23,12 @@ npm install
 Build the project:
 
 ```
-npm build
+npm run build
 ```
 
 Start in dev mode:
 ```
-npm start
+npm run start
 ```
 
 If all goes well, your console should display a message like this:
@@ -66,3 +66,9 @@ NODE_ENV=production REDIS_ENDPOINT=localhost REDIS_PORT=6379 node dist/server.js
 
 As with keys and certs, you can also add Redis endpoint details to your JSON config files.  
 
+### Running with pm2
+
+```
+cd dist
+NODE_ENV=production pm2 start server.js --name signalbuddy
+```

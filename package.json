@@ -1,7 +1,10 @@
 {
   "name": "signalbuddy",
   "description": "A scalable socket.io signaling solution for WebRTC using NodeJS cluster and Redis.",
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "farmhash": "^2.1.0",
     "getconfig": "^4.3.0",
@@ -13,22 +16,26 @@
   "main": "dist/server.js",
   "repository": "https://github.com/lazorfuzz/signalbuddy",
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-eslint": "^8.2.3",
-    "babel-preset-env": "^1.7.0",
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb": "^16.1.0",
-    "eslint-plugin-import": "^2.7.0",
+    "@babel/cli": "^7.14.8",
+    "@babel/core": "^7.15.0",
+    "@babel/plugin-transform-modules-commonjs": "^7.24.8",
+    "@babel/preset-env": "^7.15.0",
+    "core-js": "^3.16.0",
+    "eslint": "^8.40.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-jsx-a11y": "^6.0.2",
     "eslint-plugin-react": "^7.4.0",
-    "precommit-hook": "0.3.10",
     "socket.io-client": "^1.7.4",
     "tape": "^2.13.1"
   },
   "license": "MIT",
+  "type": "module",
   "scripts": {
-    "test": "node test/test.js",
-    "build": "rm -rf dist && babel src --presets babel-preset-env --out-dir dist",
-    "start": "node dist/server.js"
+    "test": "NODE_ENV=development node --es-module-specifier-resolution=node test/test.js",
+    "build": "rm -rf dist && babel src --out-dir dist --source-maps",
+    "start": "node dist/server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   }
 }
