@@ -6,6 +6,7 @@ WORKDIR /app
 # Install build-essential equivalent and other common build tools
 RUN apk add --no-cache build-base python3 && \
     ln -sf python3 /usr/bin/python
+ENV PYTHON=/usr/bin/python
 
 COPY package*.json ./
 RUN npm ci
