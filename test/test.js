@@ -6,14 +6,14 @@ import sockets from '../src/sockets';
 
 const test = tape.createHarness();
 
+let testsFailed = false;
+
 const output = test.createStream();
 output.pipe(process.stdout);
 output.on('end', () => {
-  console.log('Tests complete, killing server.');
-  process.exit(0);
+  console.log(testsFailed ? 'Some tests failed. Exiting with status 1.' : 'Tests complete.');
+  process.exit(testsFailed ? 1 : 0);
 });
-
-console.log(config);
 
 // Create a server instance for testing
 const server = createServer();
@@ -77,6 +77,7 @@ test('it should return client id when getMyId is called', (t) => {
   client.on('error', (error) => {
     console.error('Socket error:', error);
     t.fail('Socket error occurred in getMyId test');
+    testsFailed = true;
     t.end();
   });
 
@@ -85,6 +86,7 @@ test('it should return client id when getMyId is called', (t) => {
     console.error('Test timed out in getMyId test');
     client.disconnect();
     t.fail('Test timed out in getMyId test');
+    testsFailed = true;
     t.end();
   }, 5000); // 5 second timeout
 });
@@ -112,6 +114,7 @@ test('it should receive stunservers on connection', (t) => {
   client.on('error', (error) => {
     console.error('Socket error in stunservers test:', error);
     t.fail('Socket error occurred in stunservers test');
+    testsFailed = true;
     t.end();
   });
 
@@ -120,6 +123,7 @@ test('it should receive stunservers on connection', (t) => {
     console.error('Stunservers test timed out');
     client.disconnect();
     t.fail('Stunservers test timed out');
+    testsFailed = true;
     t.end();
   }, 5000); // 5 second timeout
 });
