@@ -1,0 +1,93 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - r.*
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Build Docker image
+      run: |
+        SANITIZED_REF_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+        docker build -t registry.digitalocean.com/mewzy-registry/${GITHUB_REPOSITORY##*/}:$SANITIZED_REF_NAME .
+
+    - name: Push to Container Registry
+      run: |
+        echo "${{ secrets.DO_TOKEN }}" | docker login -u "${{ secrets.DO_USERNAME }}" --password-stdin registry.digitalocean.com
+        SANITIZED_REF_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+        docker push registry.digitalocean.com/mewzy-registry/${GITHUB_REPOSITORY##*/}:$SANITIZED_REF_NAME
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      STAGE_DROPLETS: ${{ vars.STAGE_DROPLET_IPS }}
+      PROD_DROPLETS: ${{ vars.PROD_DROPLET_IPS }}
+      STAGE_PASSWORD: ${{ secrets.STAGE_DROPLET_PASSWORD }}
+      PROD_PASSWORD: ${{ secrets.PROD_DROPLET_PASSWORD }}
+      STAGE_ENV: ${{ secrets.STAGE_ENV }}
+      PROD_ENV: ${{ secrets.PROD_ENV }}
+      STAGE_SECRETS_FILE: ${{ secrets.STAGE_SECRETS_FILE }}
+      PROD_SECRETS_FILE: ${{ secrets.PROD_SECRETS_FILE }}
+      PORT_MAPPING: ${{ vars.PORT_MAPPING }} # GitHub variable
+      CONFIG_PATH: ${{ vars.CONFIG_PATH }}   # GitHub variable for config path
+    steps:
+    - name: Deploy to droplets
+      run: |
+        SANITIZED_REF_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+        DOCKER_IMAGE_TAG=registry.digitalocean.com/mewzy-registry/${GITHUB_REPOSITORY##*/}:$SANITIZED_REF_NAME
+
+        if [[ "${{ github.ref_name }}" =~ r.* ]]; then
+          echo "Deploying to production droplets"
+          DROPLETS=($PROD_DROPLETS)
+          PASSWORD=$PROD_PASSWORD
+          ENV_CONTENT="$PROD_ENV"
+          SECRETS_FILE="$PROD_SECRETS_FILE"
+        else
+          echo "Deploying to staging droplets"
+          DROPLETS=($STAGE_DROPLETS)
+          PASSWORD=$STAGE_PASSWORD
+          ENV_CONTENT="$STAGE_ENV"
+          SECRETS_FILE="$STAGE_SECRETS_FILE"
+        fi
+
+        # Convert .env content and secrets file to proper formats (escaping as needed)
+        ESCAPED_ENV_CONTENT=$(echo "$ENV_CONTENT" | sed 's/"/\\"/g')
+        ESCAPED_SECRETS_CONTENT=$(echo "$SECRETS_FILE" | sed 's/"/\\"/g')
+
+        for IP in "${DROPLETS[@]}"; do
+          echo "Deploying to $IP"
+
+          sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no root@$IP "
+            set -e  # Fail on any error
+
+            # Login to the Docker registry before pulling the image
+            echo '${{ secrets.DO_TOKEN }}' | docker login -u '${{ secrets.DO_USERNAME }}' --password-stdin registry.digitalocean.com
+
+            # Write the .env file and secrets file directly into /tmp
+            echo \"$ESCAPED_ENV_CONTENT\" > /tmp/${GITHUB_REPOSITORY##*/}_env_file
+            echo \"$ESCAPED_SECRETS_CONTENT\" > /tmp/${GITHUB_REPOSITORY##*/}_secrets_file.json
+
+            # Pull the latest image from the registry
+            docker pull $DOCKER_IMAGE_TAG
+
+            # Gracefully stop the existing container
+            docker stop ${GITHUB_REPOSITORY##*/} || true
+            docker rm ${GITHUB_REPOSITORY##*/} || true
+
+            # Start a new container with the updated image, mounting the .env file and secrets file, and exposing the port
+            docker run --restart=on-failure -d --env-file /tmp/${GITHUB_REPOSITORY##*/}_env_file -v /tmp/${GITHUB_REPOSITORY##*/}_secrets_file.json:$CONFIG_PATH -p $PORT_MAPPING --name ${GITHUB_REPOSITORY##*/} $DOCKER_IMAGE_TAG
+
+            # Optionally clean up the temporary .env and secrets files in /tmp
+            rm /tmp/${GITHUB_REPOSITORY##*/}_env_file
+            rm /tmp/${GITHUB_REPOSITORY##*/}_secrets_file.json
+          "
+        done
