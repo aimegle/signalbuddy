@@ -3,7 +3,8 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y build-essential
+# Install build-essential equivalent and other common build tools
+RUN apk add --no-cache build-base
 
 COPY package*.json ./
 RUN npm ci
