@@ -10,14 +10,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Use Node.js
-      uses: actions/setup-node@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Build Docker image
+      uses: docker/build-push-action@v4
       with:
-        node-version: '18'
-    - name: Install dependencies
-      run: npm ci
-    - name: Build project
-      run: npm run build
+        context: .
+        push: false
+        load: false
+        tags: app:pr-${{ github.event.pull_request.number }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   test:
     runs-on: ubuntu-latest

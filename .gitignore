@@ -2,7 +2,6 @@
 node_modules
 *.pem
 ecosystem.config.js
-Dockerfile
 .drone.yml
 dist
 .jshintignore

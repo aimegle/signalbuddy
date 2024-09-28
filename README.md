@@ -72,3 +72,10 @@ As with keys and certs, you can also add Redis endpoint details to your JSON con
 cd dist
 NODE_ENV=production pm2 start server.js --name signalbuddy
 ```
+
+### Running with Docker
+
+```
+docker build -t signalbuddy .
+docker run -d --restart=on_failure -p 8888:8888 -e REDIS_ENDPOINT=localhost -e REDIS_PORT=6379 signalbuddy
+```
