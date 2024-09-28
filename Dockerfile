@@ -8,6 +8,11 @@ RUN apk add --no-cache build-base python3 && \
     ln -sf python3 /usr/bin/python
 ENV PYTHON=/usr/bin/python
 
+# Add these lines to verify Python installation
+RUN which python && \
+    python --version && \
+    echo $PYTHON
+
 COPY package*.json ./
 RUN npm ci
 
