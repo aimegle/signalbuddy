@@ -4,7 +4,7 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Install build-essential equivalent and other common build tools
-RUN apk add --no-cache build-base
+RUN apk add --no-cache build-base python3
 
 COPY package*.json ./
 RUN npm ci
